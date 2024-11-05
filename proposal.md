@@ -25,14 +25,17 @@ Week 1:
 - Create the base game loop
 - Create a player-controlled tank
 - Add the ability to shoot projectiles
+
 Week 2:
 - Create blocks that would be used to build levels
 - Add the ability to destroy them using projectiles
 - Create a map for the main level
+
 Week 3:
 - Create enemies and add the ability to destroy them with projectiles
 - Give them the ability to move and traverse the map
 - Give them the ability to shoot at player
+
 Week 4:
 - Debug
 - Add dynamic path creation to let enemies move from point A to point B while keeping track of all obstacles
