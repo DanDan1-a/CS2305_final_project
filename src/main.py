@@ -48,6 +48,7 @@ class Projectile():
         self.source = source
         self.long_side_size = 20
         self.speed = 15
+        self.is_active = True
 
         '''
         Directions
@@ -93,6 +94,30 @@ class Projectile():
     def draw(self, surface):
         surface.blit(self.surface, self.pos)
 
+class Wall():
+    def __init__(self, pos=(0,0), size=50):
+        self.pos = pos
+        self.size = size
+        
+
+        self.color = pygame.Color(120,0,0)
+        self.surface = self.update_surface()
+    
+    def update_surface(self):
+        surf = pygame.Surface((self.size, self.size))
+        surf.fill(self.color)
+        return surf
+    
+    def draw(self, surface):
+        surface.blit(self.surface, self.pos)
+
+def check_collission_wall(proj, wall):
+    # left wall
+    #if (proj.pos[0] + proj.size[0] > wall.pos[0]) and (proj.pos[0] + proj.size[0] < wall.pos[0] + 20) and (proj.pos[1] + proj.size[1] > wall.pos[1] and proj.pos[1] < wall.pos[1] + wall.size):
+    if (proj.pos[0] < wall.pos[0] + wall.size) and (proj.pos[0] + proj.size[0] > wall.pos[0]) and (proj.pos[1] < wall.pos[1] + wall.size) and (proj.pos[1] + proj.size[1] > wall.pos[1]):
+        proj.is_active = False
+    #    pass
+
 def handle_movement(player, vertical_movement):
     key_pressed = pygame.key.get_pressed()
     if vertical_movement:
@@ -105,7 +130,6 @@ def handle_movement(player, vertical_movement):
             player.move(2)
         if key_pressed[K_LEFT]:
             player.move(4)
-    
 
 def main():
     pygame.init()
@@ -118,9 +142,11 @@ def main():
     dt = 0
     
     player = Player()
-
+    
 
     projectile_list = []
+    wall_list = []
+    wall_list.append(Wall(pos=(200,200)))
 
     running = True
 
@@ -142,11 +168,20 @@ def main():
             
         # TODO: Some game logic
         handle_movement(player, player.vertical_movement)
+        for idx, projectile in enumerate(projectile_list):
+            for wall in wall_list:
+                check_collission_wall(projectile, wall)
+            if not projectile.is_active:
+                del projectile_list[idx]
         for projectile in projectile_list:
             projectile.move()
+        
+        
         # Render & Display
         screen.fill(pygame.Color(0,0,0))
         player.draw(screen)
+        for wall in wall_list:
+            wall.draw(screen)
         for projectile in projectile_list:
             projectile.draw(screen)
 
