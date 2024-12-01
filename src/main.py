@@ -97,25 +97,42 @@ class Projectile():
 class Wall():
     def __init__(self, pos=(0,0), size=50):
         self.pos = pos
-        self.size = size
+        self.size = (size, size)
+        self.is_active = True
         
-
         self.color = pygame.Color(120,0,0)
         self.surface = self.update_surface()
     
     def update_surface(self):
-        surf = pygame.Surface((self.size, self.size))
+        surf = pygame.Surface(self.size)
         surf.fill(self.color)
         return surf
     
+    def get_hit(self, direction):
+        match direction:
+            case 1:
+                self.size = (self.size[0], self.size[1] - 10)
+            case 2:
+                self.size = (self.size[0] - 10, self.size[1])
+                self.pos = (self.pos[0] + 10, self.pos[1])
+            case 3:
+                self.size = (self.size[0], self.size[1] - 10)
+                self.pos = (self.pos[0], self.pos[1] + 10)
+            case 4:
+                self.size = (self.size[0] - 10, self.size[1])
+        if self.size[0] == 0 or self.size[1] == 0:
+            self.is_active = False
+        self.surface = self.update_surface()
+        
+            
     def draw(self, surface):
         surface.blit(self.surface, self.pos)
 
 def check_collission_wall(proj, wall):
     # left wall
-    #if (proj.pos[0] + proj.size[0] > wall.pos[0]) and (proj.pos[0] + proj.size[0] < wall.pos[0] + 20) and (proj.pos[1] + proj.size[1] > wall.pos[1] and proj.pos[1] < wall.pos[1] + wall.size):
-    if (proj.pos[0] < wall.pos[0] + wall.size) and (proj.pos[0] + proj.size[0] > wall.pos[0]) and (proj.pos[1] < wall.pos[1] + wall.size) and (proj.pos[1] + proj.size[1] > wall.pos[1]):
+    if (proj.pos[0] < wall.pos[0] + wall.size[0]) and (proj.pos[0] + proj.size[0] > wall.pos[0]) and (proj.pos[1] < wall.pos[1] + wall.size[1]) and (proj.pos[1] + proj.size[1] > wall.pos[1]):
         proj.is_active = False
+        wall.get_hit(proj.direction)
     #    pass
 
 def handle_movement(player, vertical_movement):
@@ -168,13 +185,16 @@ def main():
             
         # TODO: Some game logic
         handle_movement(player, player.vertical_movement)
-        for idx, projectile in enumerate(projectile_list):
-            for wall in wall_list:
+        for idp, projectile in enumerate(projectile_list):
+            for idw, wall in enumerate(wall_list):
                 check_collission_wall(projectile, wall)
+                if not wall.is_active:
+                    del wall_list[idw]
             if not projectile.is_active:
-                del projectile_list[idx]
+                del projectile_list[idp]
         for projectile in projectile_list:
             projectile.move()
+        
         
         
         # Render & Display
