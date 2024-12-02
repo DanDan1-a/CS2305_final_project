@@ -1,23 +1,25 @@
 import pygame
-from pygame.locals import *
+import random
 
-class Player():
-    def __init__(self, pos=(0,0), size=50):
-        self.pos = pos
-        self.size = size
-        '''
+from pygame.locals import *
+'''
         Directions
             1
         4       2
             3
-        '''
+'''
+
+class Player():
+    def __init__(self, pos=(0,0), size=50):
+        self.pos = pos
+        self.last_pos = self.pos
+        self.size = (size, size)
+        
         self.direction = 1
         self.vertical_movement = True
         self.last_shot_time = 0
         self.shoot_cooldown_time = 1
-
         
-
         # TODO Temp DELETE LATER
         self.color = pygame.Color(255,0,255)
         self.surface = self.update_surface()
@@ -25,6 +27,7 @@ class Player():
     def move(self, dir):
         speed = 5
         self.direction = dir
+        self.last_pos = self.pos
         match dir:
             case 1:
                 self.pos = (self.pos[0], self.pos[1] - speed)
@@ -35,8 +38,11 @@ class Player():
             case 4:
                 self.pos = (self.pos[0] - speed, self.pos[1])
     
+    def cancel_move(self):
+        self.pos = self.last_pos
+    
     def update_surface(self):
-        surf = pygame.Surface((self.size, self.size))
+        surf = pygame.Surface(self.size)
         surf.fill(self.color)
         return surf
     
@@ -60,16 +66,16 @@ class Projectile():
         match self.direction:
             case 1:
                 self.size = (self.long_side_size / 2, self.long_side_size)
-                self.pos = (source.pos[0] + source.size / 2 - self.long_side_size / 4, source.pos[1] - self.long_side_size - 1)
+                self.pos = (source.pos[0] + source.size[1] / 2 - self.long_side_size / 4, source.pos[1] - self.long_side_size - 1)
             case 2:
                 self.size = (self.long_side_size, self.long_side_size / 2)
-                self.pos = (source.pos[0] + source.size + 1, source.pos[1] + source.size / 2 - self.long_side_size / 4)
+                self.pos = (source.pos[0] + source.size[1] + 1, source.pos[1] + source.size[1] / 2 - self.long_side_size / 4)
             case 3:
                 self.size = (self.long_side_size / 2, self.long_side_size)
-                self.pos = (source.pos[0] + source.size / 2 - self.long_side_size / 4, source.pos[1] + source.size + 1)
+                self.pos = (source.pos[0] + source.size[1] / 2 - self.long_side_size / 4, source.pos[1] + source.size[1] + 1)
             case 4:
                 self.size = (self.long_side_size, self.long_side_size / 2)
-                self.pos = (source.pos[0] - self.long_side_size - 1, source.pos[1] + source.size / 2 - self.long_side_size / 4)
+                self.pos = (source.pos[0] - self.long_side_size - 1, source.pos[1] + source.size[1] / 2 - self.long_side_size / 4)
 
         self.color = pygame.Color(255,255,255)
         self.surface = self.update_surface()
@@ -123,19 +129,63 @@ class Wall():
         if self.size[0] == 0 or self.size[1] == 0:
             self.is_active = False
         self.surface = self.update_surface()
-        
-            
+
     def draw(self, surface):
         surface.blit(self.surface, self.pos)
 
+class Scanner():
+    pass
+
+class Enemy():
+    def __init__(self, pos=(0,0), size=50):
+        self.pos = pos
+        self.last_pos = self.pos
+        self.size = (size, size)
+        
+        self.direction = 3
+        self.vertical_movement = True
+        self.last_shot_time = 0
+        self.shoot_cooldown_time = 3
+        
+        self.scanner_list = []
+        
+
+        # TODO Temp DELETE LATER
+        self.color = pygame.Color(255,0,0)
+        self.surface = self.update_surface()
+
+    def move(self, dir):
+        
+    
+    def cancel_move(self):
+        self.pos = self.last_pos
+    
+    def update_surface(self):
+        surf = pygame.Surface(self.size)
+        surf.fill(self.color)
+        return surf
+    
+    def draw(self, surface):
+        surface.blit(self.surface, self.pos)
+
+
+
+wall_list = []
+player = Player()
+projectile_list = []
+
+def check_collission(object1, object2):
+    return (object1.pos[0] < object2.pos[0] + object2.size[0])  and (object1.pos[0] + object1.size[0] > object2.pos[0]) and (object1.pos[1] < object2.pos[1] + object2.size[1]) and (object1.pos[1] + object1.size[1] > object2.pos[1])
+
+def is_in_bounds(object):
+    return (object.pos[0]>=0) and (object.pos[0]+object.size[0]<750) and (object.pos[1]>=0) and (object.pos[1]+object.size[1]<750)
+
 def check_collission_wall(proj, wall):
-    # left wall
-    if (proj.pos[0] < wall.pos[0] + wall.size[0]) and (proj.pos[0] + proj.size[0] > wall.pos[0]) and (proj.pos[1] < wall.pos[1] + wall.size[1]) and (proj.pos[1] + proj.size[1] > wall.pos[1]):
+    if (check_collission(proj, wall)):
         proj.is_active = False
         wall.get_hit(proj.direction)
-    #    pass
 
-def handle_movement(player, vertical_movement):
+def handle_movement(vertical_movement):
     key_pressed = pygame.key.get_pressed()
     if vertical_movement:
         if key_pressed[K_UP]:
@@ -147,6 +197,16 @@ def handle_movement(player, vertical_movement):
             player.move(2)
         if key_pressed[K_LEFT]:
             player.move(4)
+    if not is_in_bounds(player):
+        player.cancel_move()
+
+    for wall in wall_list:
+        if(check_collission(player, wall)):
+            player.cancel_move()
+
+def setup_map():
+    wall_list
+
 
 def main():
     pygame.init()
@@ -158,11 +218,6 @@ def main():
     clock = pygame.time.Clock()
     dt = 0
     
-    player = Player()
-    
-
-    projectile_list = []
-    wall_list = []
     wall_list.append(Wall(pos=(200,200)))
 
     running = True
@@ -183,8 +238,8 @@ def main():
                         player.last_shot_time = current_time
                         projectile_list.append(Projectile(player))
             
-        # TODO: Some game logic
-        handle_movement(player, player.vertical_movement)
+        # Game logic
+        handle_movement(player.vertical_movement)
         for idp, projectile in enumerate(projectile_list):
             for idw, wall in enumerate(wall_list):
                 check_collission_wall(projectile, wall)
@@ -194,8 +249,6 @@ def main():
                 del projectile_list[idp]
         for projectile in projectile_list:
             projectile.move()
-        
-        
         
         # Render & Display
         screen.fill(pygame.Color(0,0,0))
