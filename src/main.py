@@ -134,7 +134,32 @@ class Wall():
         surface.blit(self.surface, self.pos)
 
 class Scanner():
-    pass
+    def __init__(self, parent, scanner_is_vertical=True, scanner_is_second=False):
+        self.pos = (parent.pos[0]+parent.size[0]/2-5,parent.pos[1]+parent.size[1]/2-5)
+        if scanner_is_vertical:
+            self.size = (10,900)
+            if scanner_is_second:
+                self.pos = (self.pos[0],self.pos[1] - 900)
+        else:
+            self.size = (900,10)
+            if scanner_is_second:
+                self.pos = (self.pos[0] - 900,self.pos[1])
+        
+        self.is_active = True
+        
+        # Debug color
+        self.color = pygame.Color(20,20,20)
+        self.surface = self.update_surface()
+    
+    
+    
+    def update_surface(self):
+        surf = pygame.Surface(self.size)
+        surf.fill(self.color)
+        return surf
+
+    def draw(self, surface):
+        surface.blit(self.surface, self.pos)
 
 class Enemy():
     def __init__(self, pos=(0,0), size=50):
@@ -148,14 +173,17 @@ class Enemy():
         self.shoot_cooldown_time = 3
         
         self.scanner_list = []
+        self.scanner_list.append(Scanner(self, True, True))     # 0 - Up
+        self.scanner_list.append(Scanner(self, False, False))   # 1 - Right
+        self.scanner_list.append(Scanner(self, True, False))    # 2 - Down
+        self.scanner_list.append(Scanner(self, False, True))    # 3 - Left
         
-
         # TODO Temp DELETE LATER
         self.color = pygame.Color(255,0,0)
         self.surface = self.update_surface()
 
     def move(self, dir):
-        
+        pass
     
     def cancel_move(self):
         self.pos = self.last_pos
@@ -165,14 +193,24 @@ class Enemy():
         surf.fill(self.color)
         return surf
     
+    def draw_scanners(self, surface):
+        for scanner in self.scanner_list:
+            scanner.draw(surface)
+
     def draw(self, surface):
+        self.draw_scanners(surface)
         surface.blit(self.surface, self.pos)
+
+    def act():
+        pass
+        
 
 
 
 wall_list = []
 player = Player()
 projectile_list = []
+enemy_list = []
 
 def check_collission(object1, object2):
     return (object1.pos[0] < object2.pos[0] + object2.size[0])  and (object1.pos[0] + object1.size[0] > object2.pos[0]) and (object1.pos[1] < object2.pos[1] + object2.size[1]) and (object1.pos[1] + object1.size[1] > object2.pos[1])
@@ -204,8 +242,19 @@ def handle_movement(vertical_movement):
         if(check_collission(player, wall)):
             player.cancel_move()
 
+def draw_everything(screen):
+    player.draw(screen)
+    
+    for projectile in projectile_list:
+        projectile.draw(screen)
+    for enemy in enemy_list:
+        enemy.draw(screen)
+    for wall in wall_list:
+        wall.draw(screen)
+    
+
 def setup_map():
-    wall_list
+    pass
 
 
 def main():
@@ -219,6 +268,7 @@ def main():
     dt = 0
     
     wall_list.append(Wall(pos=(200,200)))
+    enemy_list.append(Enemy(pos=(350,400)))
 
     running = True
 
@@ -252,11 +302,7 @@ def main():
         
         # Render & Display
         screen.fill(pygame.Color(0,0,0))
-        player.draw(screen)
-        for wall in wall_list:
-            wall.draw(screen)
-        for projectile in projectile_list:
-            projectile.draw(screen)
+        draw_everything(screen)
 
         pygame.display.flip()
         dt = clock.tick(24)
