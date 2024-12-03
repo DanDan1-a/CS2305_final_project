@@ -50,12 +50,12 @@ class Player():
         surface.blit(self.surface, self.pos)
         
 class Projectile():
-    def __init__(self, source):
+    def __init__(self, source, is_enemy_projectile = False):
         self.source = source
         self.long_side_size = 20
         self.speed = 15
         self.is_active = True
-
+        self.is_enemy_projectile = is_enemy_projectile
         '''
         Directions
             1
@@ -166,12 +166,26 @@ class Enemy():
         self.pos = pos
         self.last_pos = self.pos
         self.size = (size, size)
+        self.speed = 5
         
         self.direction = 3
         self.vertical_movement = True
-        self.last_shot_time = 0
-        self.shoot_cooldown_time = 3
-        
+
+        self.time_last_detection = 0
+        self.time_last_shot = 0
+
+        self.time_reaction_min = 1
+        self.time_reaction_max = 3
+        self.time_reaction_cur = 3
+
+        self.shoot_cooldown_time_min = 1
+        self.shoot_cooldown_time_max = 3
+        self.shoot_cooldown_time_cur = 1
+
+        self.has_detected = False
+        self.is_agressive = False
+        self.agressive_side = 0
+
         self.scanner_list = []
         self.scanner_list.append(Scanner(self, True, True))     # 0 - Up
         self.scanner_list.append(Scanner(self, False, False))   # 1 - Right
@@ -182,9 +196,41 @@ class Enemy():
         self.color = pygame.Color(255,0,0)
         self.surface = self.update_surface()
 
-    def move(self, dir):
-        pass
+    def move(self):
+        self.last_pos = self.pos
+        match self.direction:
+            case 1:
+                self.pos = (self.pos[0], self.pos[1] - self.speed)
+            case 2:
+                self.pos = (self.pos[0] + self.speed, self.pos[1])
+            case 3:
+                self.pos = (self.pos[0], self.pos[1] + self.speed)
+            case 4:
+                self.pos = (self.pos[0] - self.speed, self.pos[1])
+        collision_check_flag = check_collission(self, player) or not is_in_bounds(self)
+        if not collision_check_flag:
+            for wall in wall_list:
+                if check_collission(self, wall):
+                    collision_check_flag = True
+                    break
+        if collision_check_flag:
+            self.cancel_move()
+        else:
+            match self.direction:
+                case 1:
+                    self.move_scanners(0, 0-self.speed)
+                case 2:
+                    self.move_scanners(self.speed, 0)
+                case 3:
+                    self.move_scanners(0, self.speed)
+                case 4:
+                    self.move_scanners(0-self.speed, 0)
+        return collision_check_flag  
     
+    def move_scanners(self, x_change, y_change):
+        for scanner in self.scanner_list:
+            scanner.pos = (scanner.pos[0] + x_change, scanner.pos[1] + y_change)
+
     def cancel_move(self):
         self.pos = self.last_pos
     
@@ -201,11 +247,43 @@ class Enemy():
         self.draw_scanners(surface)
         surface.blit(self.surface, self.pos)
 
-    def act():
+    def roam(self):
         pass
-        
 
+    def shoot(self, time):
+        current_time = time / 1000
+        if current_time >= self.time_last_shot + self.shoot_cooldown_time_cur:
+            self.time_last_shot = current_time
+            self.shoot_cooldown_time_cur = random.randint(self.shoot_cooldown_time_min, self.shoot_cooldown_time_max)
+            projectile_list.append(Projectile(self))
 
+    def act(self, time):
+        if self.is_agressive:
+            self.direction = self.agressive_side
+            self.move()
+            self.shoot(time)
+            if 
+        has_detected_tick = False
+        for id, scanner in enumerate(self.scanner_list):
+            if check_collission(player, scanner):
+                has_detected_tick = True
+                
+                if not self.has_detected:
+                    self.has_detected = True
+                    self.time_last_detection = time / 1000
+                    self.time_reaction_cur = random.randint(self.time_reaction_min, self.time_reaction_max)
+                else:
+                    if time / 1000 >= self.time_last_detection + self.time_reaction_cur:
+                        self.is_agressive = True
+                        self.agressive_side = id + 1
+                
+
+        if not has_detected_tick:
+            self.has_detected = False
+            self.is_agressive = False
+                    
+
+                    
 
 wall_list = []
 player = Player()
@@ -282,7 +360,7 @@ def main():
                     player.vertical_movement = True
                 elif event.key in (K_LEFT, K_RIGHT):
                     player.vertical_movement = False
-                elif event.key == K_SPACE:
+                elif event.key == K_SPACE: # Player shooting
                     current_time = pygame.time.get_ticks() / 1000
                     if current_time >= player.last_shot_time + player.shoot_cooldown_time:
                         player.last_shot_time = current_time
@@ -299,6 +377,9 @@ def main():
                 del projectile_list[idp]
         for projectile in projectile_list:
             projectile.move()
+
+        for enemy in enemy_list:
+            enemy.act(pygame.time.get_ticks())
         
         # Render & Display
         screen.fill(pygame.Color(0,0,0))
