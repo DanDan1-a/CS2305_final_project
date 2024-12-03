@@ -10,7 +10,7 @@ from pygame.locals import *
 '''
 
 class Player():
-    def __init__(self, pos=(0,0), size=50):
+    def __init__(self, pos=(0,0), size=40):
         self.pos = pos
         self.last_pos = self.pos
         self.size = (size, size)
@@ -56,6 +56,8 @@ class Projectile():
         self.speed = 15
         self.is_active = True
         self.is_enemy_projectile = is_enemy_projectile
+        self.pos = (0, 0)
+        self.size = (0, 0)
         '''
         Directions
             1
@@ -102,13 +104,21 @@ class Projectile():
 
 class Wall():
     def __init__(self, pos=(0,0), size=50):
-        self.pos = pos
         self.size = (size, size)
         self.is_active = True
+
+        self.x = pos[0]
+        self.y = pos[1]
+
+        self.pos = (0, 0)
+        
         
         self.color = pygame.Color(120,0,0)
         self.surface = self.update_surface()
     
+    def fix_position(self):
+        self.pos = (self.x * self.size[0], self.y * self.size[1])
+
     def update_surface(self):
         surf = pygame.Surface(self.size)
         surf.fill(self.color)
@@ -162,7 +172,7 @@ class Scanner():
         surface.blit(self.surface, self.pos)
 
 class Enemy():
-    def __init__(self, pos=(0,0), size=50):
+    def __init__(self, pos=(0,0), size=40):
         self.pos = pos
         self.last_pos = self.pos
         self.size = (size, size)
@@ -175,8 +185,8 @@ class Enemy():
         self.time_last_shot = 0
         self.time_last_direction_change = 0
 
-        self.time_reaction_min = 1000
-        self.time_reaction_max = 3000
+        self.time_reaction_min = 400
+        self.time_reaction_max = 700
         self.time_reaction_cur = 3000
 
         self.shoot_cooldown_time_min = 1000
@@ -249,7 +259,7 @@ class Enemy():
             scanner.draw(surface)
 
     def draw(self, surface):
-        #self.draw_scanners(surface)
+        self.draw_scanners(surface)
         surface.blit(self.surface, self.pos)
 
     def change_direction_random(self, time, exclude):
@@ -266,18 +276,16 @@ class Enemy():
                 self.direction = random.choice([0,1,2,3,3])
                 
         self.time_last_direction_change = time
-        self.direction_change_time_cur = random.randint(self.direction_change_time_min, self.direction_change_time_max)
-        
+        self.direction_change_time_cur = random.randint(self.direction_change_time_min, self.direction_change_time_max)       
 
     def roam(self, time):
         collision_check_flag = self.move()
         if collision_check_flag:
-            print("OW")
             self.change_direction_random(time, self.direction)
         else:
             if time >= self.time_last_direction_change + self.direction_change_time_cur:
                 self.change_direction_random(time, self.direction)
-        #self.shoot(time)
+        self.shoot(time)
             
 
     def shoot(self, time):
@@ -345,10 +353,30 @@ def handle_movement(vertical_movement):
             player.move(4)
     if not is_in_bounds(player):
         player.cancel_move()
+        return
 
     for wall in wall_list:
         if(check_collission(player, wall)):
             player.cancel_move()
+            return
+    for enemy in enemy_list:
+        if(check_collission(player, enemy)):
+            player.cancel_move()
+            return
+
+def handle_projectiles():
+    for idp, projectile in enumerate(projectile_list):
+        if not is_in_bounds(projectile):
+            del projectile_list[idp]
+        else:
+            for idw, wall in enumerate(wall_list):
+                check_collission_wall(projectile, wall)
+                if not wall.is_active:
+                    del wall_list[idw]
+            if not projectile.is_active:
+                del projectile_list[idp]
+    for projectile in projectile_list:
+        projectile.move()
 
 def draw_everything(screen):
     player.draw(screen)
@@ -362,7 +390,56 @@ def draw_everything(screen):
     
 
 def setup_map():
-    pass
+    wall_list.append(Wall(pos=(0,3)))
+    wall_list.append(Wall(pos=(0,3)))
+    wall_list.append(Wall(pos=(0, 11)))
+    wall_list.append(Wall(pos=(0, 12)))
+    wall_list.append(Wall(pos=(0, 13)))
+    wall_list.append(Wall(pos=(0, 14)))
+    wall_list.append(Wall(pos=(1,3)))
+    wall_list.append(Wall(pos=(1,4)))
+    wall_list.append(Wall(pos=(1,5)))
+    wall_list.append(Wall(pos=(1,7)))
+    wall_list.append(Wall(pos=(1,8)))
+    wall_list.append(Wall(pos=(1,9)))
+    wall_list.append(Wall(pos=(1,11)))
+    wall_list.append(Wall(pos=(1,12)))
+
+    wall_list.append(Wall(pos=(2,3)))
+    wall_list.append(Wall(pos=(2,4)))
+    wall_list.append(Wall(pos=(2,5)))
+    wall_list.append(Wall(pos=(2,7)))
+
+    wall_list.append(Wall(pos=(3,4)))
+    wall_list.append(Wall(pos=(3,11)))
+    wall_list.append(Wall(pos=(3,12)))
+
+    wall_list.append(Wall(pos=(4,4)))
+    wall_list.append(Wall(pos=(4,6)))
+    wall_list.append(Wall(pos=(4,7)))
+    wall_list.append(Wall(pos=(4,10)))
+    wall_list.append(Wall(pos=(4,11)))
+
+    wall_list.append(Wall(pos=(5,2)))
+    wall_list.append(Wall(pos=(5,6)))
+    wall_list.append(Wall(pos=(5,7)))
+    wall_list.append(Wall(pos=(5,10)))
+
+    wall_list.append(Wall(pos=(6,2)))
+    wall_list.append(Wall(pos=(6,4)))
+    wall_list.append(Wall(pos=(6,6)))
+    wall_list.append(Wall(pos=(6,7)))
+    wall_list.append(Wall(pos=(6,13)))
+    wall_list.append(Wall(pos=(6,14)))
+
+
+    for id in range(36):
+        cur_wal = wall_list[id]
+        wall_list.append(Wall(pos=(14-cur_wal.x, cur_wal.y)))
+        
+    for wall in wall_list:
+        wall.fix_position()
+    
 
 
 def main():
@@ -375,8 +452,9 @@ def main():
     clock = pygame.time.Clock()
     dt = 0
     
-    wall_list.append(Wall(pos=(200,200)))
     enemy_list.append(Enemy(pos=(350,400)))
+
+    setup_map()
 
     running = True
 
@@ -398,15 +476,7 @@ def main():
             
         # Game logic
         handle_movement(player.vertical_movement)
-        for idp, projectile in enumerate(projectile_list):
-            for idw, wall in enumerate(wall_list):
-                check_collission_wall(projectile, wall)
-                if not wall.is_active:
-                    del wall_list[idw]
-            if not projectile.is_active:
-                del projectile_list[idp]
-        for projectile in projectile_list:
-            projectile.move()
+        handle_projectiles()
 
         for enemy in enemy_list:
             enemy.act(pygame.time.get_ticks())
