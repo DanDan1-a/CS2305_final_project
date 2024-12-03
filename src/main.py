@@ -173,14 +173,19 @@ class Enemy():
 
         self.time_last_detection = 0
         self.time_last_shot = 0
+        self.time_last_direction_change = 0
 
-        self.time_reaction_min = 1
-        self.time_reaction_max = 3
-        self.time_reaction_cur = 3
+        self.time_reaction_min = 1000
+        self.time_reaction_max = 3000
+        self.time_reaction_cur = 3000
 
-        self.shoot_cooldown_time_min = 1
-        self.shoot_cooldown_time_max = 3
-        self.shoot_cooldown_time_cur = 1
+        self.shoot_cooldown_time_min = 1000
+        self.shoot_cooldown_time_max = 3000
+        self.shoot_cooldown_time_cur = 1000
+
+        self.direction_change_time_min = 500
+        self.direction_change_time_max = 1500
+        self.direction_change_time_cur = 0
 
         self.has_detected = False
         self.is_agressive = False
@@ -244,14 +249,39 @@ class Enemy():
             scanner.draw(surface)
 
     def draw(self, surface):
-        self.draw_scanners(surface)
+        #self.draw_scanners(surface)
         surface.blit(self.surface, self.pos)
 
-    def roam(self):
-        pass
+    def change_direction_random(self, time, exclude):
+        match exclude:
+            case 0:
+                self.direction = random.choice([1,2,3,3,4])
+            case 1:
+                self.direction = random.choice([0,2,3,3,4])
+            case 2:
+                self.direction = random.choice([0,1,3,3,4])
+            case 3:
+                self.direction = random.choice([0,1,2,3,4])
+            case 4:
+                self.direction = random.choice([0,1,2,3,3])
+                
+        self.time_last_direction_change = time
+        self.direction_change_time_cur = random.randint(self.direction_change_time_min, self.direction_change_time_max)
+        
+
+    def roam(self, time):
+        collision_check_flag = self.move()
+        if collision_check_flag:
+            print("OW")
+            self.change_direction_random(time, self.direction)
+        else:
+            if time >= self.time_last_direction_change + self.direction_change_time_cur:
+                self.change_direction_random(time, self.direction)
+        #self.shoot(time)
+            
 
     def shoot(self, time):
-        current_time = time / 1000
+        current_time = time
         if current_time >= self.time_last_shot + self.shoot_cooldown_time_cur:
             self.time_last_shot = current_time
             self.shoot_cooldown_time_cur = random.randint(self.shoot_cooldown_time_min, self.shoot_cooldown_time_max)
@@ -262,18 +292,21 @@ class Enemy():
             self.direction = self.agressive_side
             self.move()
             self.shoot(time)
-            if 
+        else:
+            self.roam(time)
+            pass
         has_detected_tick = False
+        
         for id, scanner in enumerate(self.scanner_list):
             if check_collission(player, scanner):
                 has_detected_tick = True
                 
                 if not self.has_detected:
                     self.has_detected = True
-                    self.time_last_detection = time / 1000
+                    self.time_last_detection = time
                     self.time_reaction_cur = random.randint(self.time_reaction_min, self.time_reaction_max)
                 else:
-                    if time / 1000 >= self.time_last_detection + self.time_reaction_cur:
+                    if time >= self.time_last_detection + self.time_reaction_cur:
                         self.is_agressive = True
                         self.agressive_side = id + 1
                 
@@ -282,9 +315,6 @@ class Enemy():
             self.has_detected = False
             self.is_agressive = False
                     
-
-                    
-
 wall_list = []
 player = Player()
 projectile_list = []
