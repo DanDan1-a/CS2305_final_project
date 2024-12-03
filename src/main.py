@@ -259,7 +259,7 @@ class Enemy():
             scanner.draw(surface)
 
     def draw(self, surface):
-        self.draw_scanners(surface)
+        #self.draw_scanners(surface) # For debug only
         surface.blit(self.surface, self.pos)
 
     def change_direction_random(self, time, exclude):
@@ -287,7 +287,6 @@ class Enemy():
                 self.change_direction_random(time, self.direction)
         self.shoot(time)
             
-
     def shoot(self, time):
         current_time = time
         if current_time >= self.time_last_shot + self.shoot_cooldown_time_cur:
@@ -322,11 +321,36 @@ class Enemy():
         if not has_detected_tick:
             self.has_detected = False
             self.is_agressive = False
-                    
+
+class Spawn_checker():
+    def __init__(self, pos=(0, 0)):
+        self.pos = pos
+        self.size = (40, 40)
+
 wall_list = []
 player = Player()
 projectile_list = []
 enemy_list = []
+
+def spawn_enemy():
+    checker = Spawn_checker(pos=(random.randint(0, 700),random.randint(0,700)))
+    for y in range(20):
+        for x in range(20):
+            print(checker.pos)
+            if checker.pos[0] + 40 > 750:
+                break
+            collision_flag = False
+            for wall in wall_list:
+                if check_collission(checker, wall):
+                    collision_flag = True
+            if not collision_flag:
+                enemy_list.append(Enemy(pos=(checker.pos)))
+                return
+            checker.pos = (checker.pos[0] + 10, checker.pos[1])
+        checker.pos = (checker.pos[0], checker.pos[1] + 10)
+        if checker.pos[1] + 40 > 750:
+            break
+    enemy_list.append(Enemy(pos=(375, 10)))
 
 def check_collission(object1, object2):
     return (object1.pos[0] < object2.pos[0] + object2.size[0])  and (object1.pos[0] + object1.size[0] > object2.pos[0]) and (object1.pos[1] < object2.pos[1] + object2.size[1]) and (object1.pos[1] + object1.size[1] > object2.pos[1])
@@ -366,15 +390,26 @@ def handle_movement(vertical_movement):
 
 def handle_projectiles():
     for idp, projectile in enumerate(projectile_list):
+        collision_flag = False
         if not is_in_bounds(projectile):
             del projectile_list[idp]
-        else:
+            collision_flag = True
+        
+        if not collision_flag:
+            for id, enemy in enumerate(enemy_list):
+                if not projectile.is_enemy_projectile and check_collission(projectile, enemy):
+                    collision_flag = True
+                    projectile.is_active = False
+                    del enemy_list[id]
+                    spawn_enemy()
+        
+        if not collision_flag:
             for idw, wall in enumerate(wall_list):
                 check_collission_wall(projectile, wall)
                 if not wall.is_active:
                     del wall_list[idw]
-            if not projectile.is_active:
-                del projectile_list[idp]
+        if not projectile.is_active:
+            del projectile_list[idp]
     for projectile in projectile_list:
         projectile.move()
 
@@ -452,7 +487,9 @@ def main():
     clock = pygame.time.Clock()
     dt = 0
     
-    enemy_list.append(Enemy(pos=(350,400)))
+    for x in range(5):
+        spawn_enemy()
+
 
     setup_map()
 
