@@ -1,7 +1,7 @@
 # Tank Battalion on Python
 
 ## Demo:
-Demo Video: 
+Demo Video: https://youtu.be/Iq7icPmGQM0
 
 ## GitHub Repository
 GitHub Repo: https://github.com/DanDan1-a/CS2305_final_project
