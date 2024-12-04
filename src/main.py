@@ -512,7 +512,9 @@ def clear_game():
     projectile_list.clear()
     enemy_list.clear()
     global player
-    player = Player()    
+    player = Player() 
+    global score
+    score = 0   
 
 
 def main():
@@ -526,13 +528,14 @@ def main():
     dt = 0
     
     scores_font = pygame.font.SysFont("arial",15)
+    end_font = pygame.font.SysFont("arial",45)
+    global score
+    global high_score
 
     setup_map()
 
     for x in range(5):
         spawn_enemy()
-
-        
 
     running = True
     restart_loop = False
@@ -578,8 +581,30 @@ def main():
         pygame.display.flip()
         dt = clock.tick(24)
     
-    clear_game()
+    new_high_score_flag = False
+    if high_score < score:
+        high_score = score
+        new_high_score_flag = True
+    
+    
     screen.fill(pygame.Color(0,0,0))
+
+    score_text = end_font.render(f"GAME OVER", True, pygame.Color(255,255,255))
+    screen.blit(score_text, (375 - score_text.get_width() // 2, 150))
+    
+    high_score_text = end_font.render(f"Press SPACE to restart or press E to exit", True, pygame.Color(255,255,255))
+    screen.blit(high_score_text, (375 - high_score_text.get_width() // 2, 550))
+
+
+    score_text = end_font.render(f"SCORE: {score} ", True, pygame.Color(255,255,255))
+    high_score_text = end_font.render(f"HIGH SCORE: {high_score} ", True, pygame.Color(255,255,255))
+    screen.blit(score_text, (375 - score_text.get_width() // 2, 250))
+    screen.blit(high_score_text, (375 - high_score_text.get_width() // 2, 350))
+    if new_high_score_flag:
+        score_text = scores_font.render(f"NEW HIGH SCORE!", True, pygame.Color(255,235,176))
+        screen.blit(score_text, (375 - score_text.get_width() // 2, 400))
+    clear_game()
+
     pygame.display.flip()
     restart_flag = False
     while restart_loop:
@@ -589,6 +614,8 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if event.key == K_SPACE:
                     restart_flag = True
+                    restart_loop = False
+                elif event.key == K_e:
                     restart_loop = False
 
         dt = clock.tick(24)
