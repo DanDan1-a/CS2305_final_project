@@ -20,8 +20,10 @@ class Player():
         self.last_shot_time = 0
         self.shoot_cooldown_time = 1
         
-        # TODO Temp DELETE LATER
+        self.lives = 3
+        
         self.color = pygame.Color(255,0,255)
+
         self.surface = self.update_surface()
 
     def move(self, dir):
@@ -41,7 +43,18 @@ class Player():
     def cancel_move(self):
         self.pos = self.last_pos
     
+    def update_status(self):
+        self.surface = self.update_surface()
+
     def update_surface(self):
+        match self.lives:
+            case 3:
+                self.color = pygame.Color(150,255,150)
+            case 2:
+                self.color = pygame.Color(255,246,150)
+            case 1:
+                self.color = pygame.Color(255,164,150)
+            
         surf = pygame.Surface(self.size)
         surf.fill(self.color)
         return surf
@@ -185,8 +198,8 @@ class Enemy():
         self.time_last_shot = 0
         self.time_last_direction_change = 0
 
-        self.time_reaction_min = 400
-        self.time_reaction_max = 700
+        self.time_reaction_min = 200
+        self.time_reaction_max = 520
         self.time_reaction_cur = 3000
 
         self.shoot_cooldown_time_min = 1000
@@ -265,15 +278,15 @@ class Enemy():
     def change_direction_random(self, time, exclude):
         match exclude:
             case 0:
-                self.direction = random.choice([1,2,3,3,4])
+                self.direction = random.choice([1,2,3,4])
             case 1:
-                self.direction = random.choice([0,2,3,3,4])
+                self.direction = random.choice([0,2,3,4])
             case 2:
-                self.direction = random.choice([0,1,3,3,4])
+                self.direction = random.choice([0,1,3,4])
             case 3:
-                self.direction = random.choice([0,1,2,3,4])
+                self.direction = random.choice([0,1,2,4])
             case 4:
-                self.direction = random.choice([0,1,2,3,3])
+                self.direction = random.choice([0,1,2,3])
                 
         self.time_last_direction_change = time
         self.direction_change_time_cur = random.randint(self.direction_change_time_min, self.direction_change_time_max)       
@@ -331,6 +344,11 @@ wall_list = []
 player = Player()
 projectile_list = []
 enemy_list = []
+
+
+score = 0
+high_score = 0
+
 
 def spawn_enemy():
     checker = Spawn_checker(pos=(random.randint(0, 700),random.randint(0,700)))
@@ -400,17 +418,33 @@ def handle_projectiles():
                     collision_flag = True
                     projectile.is_active = False
                     del enemy_list[id]
+                    global score
+                    score = score + 50
                     spawn_enemy()
         
+        if not collision_flag and projectile.is_enemy_projectile:
+            global player
+
+            if check_collission(projectile, player):
+                projectile.is_active = False
+                player.lives = player.lives - 1
+                player.update_status()
+
+
         if not collision_flag:
             for idw, wall in enumerate(wall_list):
                 check_collission_wall(projectile, wall)
                 if not wall.is_active:
                     del wall_list[idw]
+
+        
+
         if not projectile.is_active:
             del projectile_list[idp]
     for projectile in projectile_list:
         projectile.move()
+
+
 
 def draw_everything(screen):
     player.draw(screen)
@@ -421,8 +455,7 @@ def draw_everything(screen):
         enemy.draw(screen)
     for wall in wall_list:
         wall.draw(screen)
-    
-
+     
 def setup_map():
     wall_list.append(Wall(pos=(0,3)))
     wall_list.append(Wall(pos=(0,3)))
@@ -472,27 +505,37 @@ def setup_map():
         wall_list.append(Wall(pos=(14-cur_wal.x, cur_wal.y)))
         
     for wall in wall_list:
-        wall.fix_position()
-    
+        wall.fix_position()   
+
+def clear_game():
+    wall_list.clear()
+    projectile_list.clear()
+    enemy_list.clear()
+    global player
+    player = Player()    
 
 
 def main():
     pygame.init()
     pygame.display.set_caption("Tank Game")
-    resolution = (750, 750)
+    resolution = (750, 790)
     screen = pygame.display.set_mode(resolution)
     screen.fill(pygame.Color(0, 0, 0))
 
     clock = pygame.time.Clock()
     dt = 0
     
+    scores_font = pygame.font.SysFont("arial",15)
 
     setup_map()
 
     for x in range(5):
         spawn_enemy()
 
+        
+
     running = True
+    restart_loop = False
 
     while running:
         # Event Loop
@@ -513,18 +556,50 @@ def main():
         # Game logic
         handle_movement(player.vertical_movement)
         handle_projectiles()
+        if(player.lives == 0):
+            running = False
+            restart_loop = True
+            break
+
 
         for enemy in enemy_list:
             enemy.act(pygame.time.get_ticks())
         
         # Render & Display
         screen.fill(pygame.Color(0,0,0))
+        pygame.draw.line(screen, pygame.Color(255,255,255), start_pos=(0,751), end_pos=(750,751), width=4)
+        score_text = scores_font.render(f"SCORE: {score} ", True, pygame.Color(255,255,255))
+        high_score_text = scores_font.render(f"HIGH SCORE: {high_score} ", True, pygame.Color(255,255,255))
+        screen.blit(score_text, (375 - score_text.get_width() // 2, 755))
+        screen.blit(high_score_text, (375 - high_score_text.get_width() // 2, 770))
+
         draw_everything(screen)
 
         pygame.display.flip()
         dt = clock.tick(24)
+    
+    clear_game()
+    screen.fill(pygame.Color(0,0,0))
+    pygame.display.flip()
+    restart_flag = False
+    while restart_loop:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                restart_loop = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == K_SPACE:
+                    restart_flag = True
+                    restart_loop = False
+
+        dt = clock.tick(24)
+
+
     pygame.quit()
+    return restart_flag
 
 
 if __name__ == "__main__":
-    main()
+    running = True
+    while running:
+        running = main()
+        
