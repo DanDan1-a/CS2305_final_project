@@ -292,7 +292,7 @@ class Enemy():
         if current_time >= self.time_last_shot + self.shoot_cooldown_time_cur:
             self.time_last_shot = current_time
             self.shoot_cooldown_time_cur = random.randint(self.shoot_cooldown_time_min, self.shoot_cooldown_time_max)
-            projectile_list.append(Projectile(self))
+            projectile_list.append(Projectile(self, is_enemy_projectile=True))
 
     def act(self, time):
         if self.is_agressive:
@@ -336,7 +336,6 @@ def spawn_enemy():
     checker = Spawn_checker(pos=(random.randint(0, 700),random.randint(0,700)))
     for y in range(20):
         for x in range(20):
-            print(checker.pos)
             if checker.pos[0] + 40 > 750:
                 break
             collision_flag = False
@@ -487,11 +486,11 @@ def main():
     clock = pygame.time.Clock()
     dt = 0
     
-    for x in range(5):
-        spawn_enemy()
-
 
     setup_map()
+
+    for x in range(5):
+        spawn_enemy()
 
     running = True
 
