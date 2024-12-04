@@ -223,7 +223,6 @@ class Enemy():
         self.scanner_list.append(Scanner(self, True, False))    # 2 - Down
         self.scanner_list.append(Scanner(self, False, True))    # 3 - Left
         
-        # TODO Temp DELETE LATER
         self.color = pygame.Color(255,0,0)
         self.surface = self.update_surface()
 
