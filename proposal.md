@@ -2,11 +2,11 @@
 ## Title: Tank Battalion on Python
 ### Description
 A remake of the classic 80s arcade game Tank Batallion that will be created on Python. This is a 2D top-view game where players control a tank in a maze. 
-The main objective is to defend the base tile and defeat as many enemies as possible before losing the game.
+The main objective is to defeat as many enemies as possible before losing the game.
 
 ### Features
 A top-view 2D game that will include:
-- 3 Types of enemies
+- Enemies that roam around the level and attack player on sight
 - Destructable level
 - High Score capabilities
 

@@ -1,3 +1,6 @@
+# Daniel Danchenkov
+# DXD200033s
+
 import pygame
 import random
 
