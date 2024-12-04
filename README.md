@@ -7,7 +7,7 @@ Demo Video: https://youtu.be/Iq7icPmGQM0
 GitHub Repo: https://github.com/DanDan1-a/CS2305_final_project
 
 ## Description
-My project is a remake of the classic 80s arcade game Tank Batallion on Python. This is a 2D top-view game where players control a tank in a maze filled with enemies that continuously roam around the level and attack players on sight. Furthermore, the level is completely dynamic, so it's possible to destroy walls using projectiles. 
+My project is a remake of the classic 80s arcade game Tank Batallion on Python. This is a 2D top-view game where players control a tank in a maze filled with enemies that continuously roam around the level and attack players on sight. Furthermore, the level is completely dynamic, so it's possible to destroy walls using projectiles. Although, the enemies will also adjust to the changes on the map and even destroy walls on their own to ambust the player or attack them from a great distance.
 The player has 3 lives and the main objective is to defeat as many enemies as possible before losing the game.
 
 ## Included Files
